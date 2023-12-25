@@ -2,37 +2,33 @@
 const inquirer = require('inquirer');
 const express = require('express');
 const mysql = require('mysql2');
+const {employeeQuery, addEmployee, updateEmployee, roleQuery, addRole, departmentQuery, addDepartment} = require('./db/query');
 
-// const PORT = process.env.PORT || 3001;
-// const app = express();
+const PORT = process.env.PORT || 3001;
+const app = express();
 
 // // Express middleware
-// app.use(express.urlencoded({ extended: false }));
-// app.use(express.json());
+
+app.use(express.json());
+// app.use('/api', api);
 
 // Connect to database
-const connectToDatabase = () => {
-    return new Promise((resolve, reject) => {
-        const db = mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: 'password',
-            database: 'employee_manager'
-        });
-
-        db.connect((err) => {
-            if (err) {
-                reject(err);
-            } else {
-                console.log(`Connected to the employee_manager database.`);
-                resolve(db);
-            }
-        });
-    });
-};
+const db = mysql.createConnection(
+    {
+        host: 'localhost',
+        // MySQL username,
+        user: 'root',
+        // MySQL password
+        password: '',
+        database: 'classlist_db'
+    },
+    console.log(`Connected to the classlist_db database.`)
+);
 
 const main = async () => {
-    while (true) {
+ let isRunning = true;
+
+    while (isRunning) {
         console.log(`
         888888888                        888                                          
         888                               888                                          
@@ -79,45 +75,56 @@ const main = async () => {
         ])
         switch (answer.action) {
             case 'View All Employees':
-
+                app.get('/employees', (req,res) =>
+                employeeQuery((err, result) => {
+                    if (err) {
+                      // Handle error
+                      console.error(err);
+                      res.status(500).json({ error: 'Internal Server Error' });
+                    } else {
+                      res.json(result);
+                    }
+                  }));
+                ;
                 console.log('Viewing employees...');
                 break;
 
             case 'Add Employee':
-
+                // add logic here
                 console.log('Adding employee...');
                 break;
 
             case 'Update Employee Role':
-
+                // add logic here
                 console.log('Updating employee role...');
                 break;
 
             case 'View All Roles':
-
+                // add logic here
                 console.log('Viewing all roles...');
                 break;
 
             case 'Add Role':
-
+                // add logic here
                 console.log('Adding role...');
                 break;
 
             case 'View All Departments':
-
+                // add logic here
                 console.log('Viewing Departments...');
                 break;
 
             case 'Add Department':
-
+                // add logic here
                 console.log('Adding department...');
                 break;
 
             case 'Quit':
-
                 console.log('Quitting...');
+                isRunning = false;
                 process.exit();
         }
     }
 };
+
 main();
