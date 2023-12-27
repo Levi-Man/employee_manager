@@ -1,35 +1,47 @@
-// // import and require dependencies
 const inquirer = require('inquirer');
-const express = require('express');
 const mysql = require('mysql2');
-const {employeeQuery, addEmployee, updateEmployee, roleQuery, addRole, departmentQuery, addDepartment} = require('./db/query');
 
-const PORT = process.env.PORT || 3001;
-const app = express();
+// Connect to the MySQL database
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: 'password',
+    database: 'employee_db',
+});
 
-// // Express middleware
+const getDepartments = async () => {
+    const [departments] = await db.promise().query('SELECT * FROM department');
+    return departments;
+};
 
-app.use(express.json());
-// app.use('/api', api);
+const getRoles = async () => {
+    const [roles] = await db.promise().query(`SELECT role.title AS job_title, role.id AS role_id, department.name AS department_name, role.salary
+    FROM role INNER JOIN department ON role.department_id = department.id;`);
+    return roles;
+};
 
-// Connect to database
-const db = mysql.createConnection(
-    {
-        host: 'localhost',
-        // MySQL username,
-        user: 'root',
-        // MySQL password
-        password: '',
-        database: 'classlist_db'
-    },
-    console.log(`Connected to the classlist_db database.`)
-);
+const getEmployees = async () => {
+    const [employees] = await db.promise().query(`
+        SELECT 
+            e.id, 
+            e.first_name, 
+            e.last_name, 
+            r.title AS job_title, 
+            d.name AS department, 
+            r.salary, 
+            CONCAT(m.first_name, ' ', m.last_name) AS manager
+        FROM employee e
+        JOIN role r ON e.role_id = r.id
+        JOIN department d ON r.department_id = d.id
+        LEFT JOIN employee m ON e.manager_id = m.id;
+    `);
 
-const main = async () => {
- let isRunning = true;
+    return employees;
+};
 
-    while (isRunning) {
-        console.log(`
+
+
+console.log(`
         888888888                        888                                          
         888                               888                                          
         888                               888                                          
@@ -53,78 +65,185 @@ const main = async () => {
                                                  Y8b d88P                              
                                                   "Y88P"                               
 
-`);
+`)
+// Prompt the user for action
+const promptUser = () => {
+    return inquirer.prompt([
+        {
+            type: 'list',
+            name: 'action',
+            message: 'What would you like to do?',
+            choices: [
+                'View All Departments',
+                'View All Roles',
+                'View All Employees',
+                'Add Department',
+                'Add Role',
+                'Add Employee',
+                'Update Employee Role',
+                'Quit',
+            ],
+        },
+    ]);
+};
 
+// Function to handle each action
+const handleAction = async (action) => {
+    switch (action) {
+        case 'View All Departments':
+            const departments = await getDepartments();
+            console.table(departments);
+            break;
+        case 'View All Roles':
+            const roles = await getRoles();
+            console.table(roles)
+            break;
+        case 'View All Employees':
+            const employees = await getEmployees();
+            console.table(employees)
+            break;
+        case 'Add Department':
+            const departmentNamePrompt = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'departmentName',
+                    message: 'Enter the name of the new department:',
+                    validate: (input) => input.trim() !== '',
+                },
+            ]);
 
-        const answer = await inquirer.prompt([
-            {
-                type: 'list',
-                message: 'What would you like to do?',
-                name: 'action',
-                choices: [
-                    'View All Employees',
-                    'Add Employee',
-                    'Update Employee Role',
-                    'View All Roles',
-                    'Add Role',
-                    'View All Departments',
-                    'Add Department',
-                    'Quit'
-                ],
-            },
-        ])
-        switch (answer.action) {
-            case 'View All Employees':
-                app.get('/employees', (req,res) =>
-                employeeQuery((err, result) => {
-                    if (err) {
-                      // Handle error
-                      console.error(err);
-                      res.status(500).json({ error: 'Internal Server Error' });
-                    } else {
-                      res.json(result);
-                    }
-                  }));
-                ;
-                console.log('Viewing employees...');
+            const { departmentName } = departmentNamePrompt;
+
+            try {
+                await db.promise().query('INSERT INTO department (name) VALUES (?)', [departmentName]);
+                console.log(`Department "${departmentName}" added successfully.`);
+            } catch (error) {
+                console.error('An error occurred while adding the department:', error);
+            }
+            break;
+        case 'Add Role':
+            const departmentsList = await getDepartments();
+
+            if (departmentsList.length === 0) {
+                console.log('Please add a department before adding a role.');
                 break;
+            }
 
-            case 'Add Employee':
-                // add logic here
-                console.log('Adding employee...');
+            const roleDataPrompt = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'title',
+                    message: 'Enter the title of the new role:',
+                    validate: (input) => input.trim() !== '',
+                },
+                {
+                    type: 'input',
+                    name: 'salary',
+                    message: 'Enter the salary for the new role:',
+                    validate: (input) => !isNaN(input) && parseFloat(input) >= 0,
+                },
+                {
+                    type: 'list',
+                    name: 'departmentId',
+                    message: 'Select the department for the new role:',
+                    choices: departmentsList.map((department) => ({
+                        name: department.name,
+                        value: department.id,
+                    })),
+                },
+            ]);
+
+            try {
+                const { title, salary, departmentId } = roleDataPrompt;
+
+                await db.promise().query('INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)', [title, salary, departmentId]);
+                console.log(`Role "${title}" added successfully.`);
+            } catch (error) {
+                console.error('An error occurred while adding the role:', error);
+            }
+            break;
+        case 'Add Employee':
+            const rolesList = await getRoles();
+            const employeesList = await getEmployees();
+
+            if (rolesList.length === 0) {
+                console.log('Please add a role before adding an employee.');
                 break;
+            }
 
-            case 'Update Employee Role':
-                // add logic here
-                console.log('Updating employee role...');
-                break;
+            const employeeDataPrompt = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'firstName',
+                    message: 'Enter the first name of the new employee:',
+                    validate: (input) => input.trim() !== '',
+                },
+                {
+                    type: 'input',
+                    name: 'lastName',
+                    message: 'Enter the last name of the new employee:',
+                    validate: (input) => input.trim() !== '',
+                },
+                {
+                    type: 'list',
+                    name: 'roleId',
+                    message: 'Select the role for the new employee:',
+                    choices: rolesList.map((role) => ({
+                        name: role.job_title,
+                        value: role.role_id,
+                    })),
+                },
+                {
+                    type: 'list',
+                    name: 'managerId',
+                    message: 'Select the manager for the new employee (if applicable):',
+                    choices: [
+                        { name: 'None', value: null },
+                        ...employeesList.map((employee) => ({
+                            name: `${employee.first_name} ${employee.last_name}`,
+                            value: employee.id,
+                        })),
+                    ],
+                },
+            ]);
 
-            case 'View All Roles':
-                // add logic here
-                console.log('Viewing all roles...');
-                break;
+            try {
+                const { firstName, lastName, roleId, managerId } = employeeDataPrompt;
 
-            case 'Add Role':
-                // add logic here
-                console.log('Adding role...');
-                break;
-
-            case 'View All Departments':
-                // add logic here
-                console.log('Viewing Departments...');
-                break;
-
-            case 'Add Department':
-                // add logic here
-                console.log('Adding department...');
-                break;
-
-            case 'Quit':
-                console.log('Quitting...');
-                isRunning = false;
-                process.exit();
-        }
+                await db.promise().query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)', [firstName, lastName, roleId, managerId]);
+                console.log(`Employee "${firstName} ${lastName}" added successfully.`);
+            } catch (error) {
+                console.error('An error occurred while adding the employee:', error);
+            }
+            break;
+        case 'Update Employee Role':
+            // Implement logic to update an employee's role
+            break;
+        case 'Quit':
+            console.log('Quitting...');
+            process.exit();
     }
 };
 
-main();
+// Connect to the MySQL database
+db.connect((err) => {
+    if (err) throw err;
+
+    console.log('Connected to the employee_db database');
+
+    // Call the start app
+    startApp();
+});
+
+// Function to start the application
+const startApp = async () => {
+    try {
+        const { action } = await promptUser();
+
+        await handleAction(action);
+
+        startApp();
+    } catch (error) {
+        console.error('An error occurred:', error);
+    }
+};
