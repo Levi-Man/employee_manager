@@ -22,18 +22,19 @@ const getRoles = async () => {
 
 const getEmployees = async () => {
     const [employees] = await db.promise().query(`
-        SELECT 
-            e.id, 
-            e.first_name, 
-            e.last_name, 
-            r.title AS job_title, 
-            d.name AS department, 
-            r.salary, 
-            CONCAT(m.first_name, ' ', m.last_name) AS manager
-        FROM employee e
-        JOIN role r ON e.role_id = r.id
-        JOIN department d ON r.department_id = d.id
-        LEFT JOIN employee m ON e.manager_id = m.id;
+    SELECT 
+    employee.id, 
+    employee.first_name, 
+    employee.last_name, 
+    role.title AS job_title, 
+    department.name AS department, 
+    role.salary, 
+    CONCAT(manager.first_name, ' ', manager.last_name) AS manager
+FROM 
+    employee
+    JOIN role ON employee.role_id = role.id
+    JOIN department ON role.department_id = department.id
+    LEFT JOIN employee AS manager ON employee.manager_id = manager.id;
     `);
 
     return employees;
@@ -87,6 +88,7 @@ const promptUser = () => {
     ]);
 };
 
+let rolesList;
 // Function to handle each action
 const handleAction = async (action) => {
     switch (action) {
@@ -163,7 +165,7 @@ const handleAction = async (action) => {
             }
             break;
         case 'Add Employee':
-            const rolesList = await getRoles();
+            rolesList = rolesList || await getRoles();;
             const employeesList = await getEmployees();
 
             if (rolesList.length === 0) {
@@ -217,7 +219,43 @@ const handleAction = async (action) => {
             }
             break;
         case 'Update Employee Role':
-            // Implement logic to update an employee's role
+            rolesList = rolesList || await getRoles();
+            const employeesForUpdate = await getEmployees();
+            
+            if (employeesForUpdate.length === 0) {
+                console.log('No employees found. Please add an employee before updating roles.');
+                break;
+            }
+
+            const employeeUpdatePrompt = await inquirer.prompt([
+                {
+                    type: 'list',
+                    name: 'employeeId',
+                    message: 'Select the employee to update:',
+                    choices: employeesForUpdate.map((employee) => ({
+                        name: `${employee.first_name} ${employee.last_name}`,
+                        value: employee.id,
+                    })),
+                },
+                {
+                    type: 'list',
+                    name: 'newRoleId',
+                    message: 'Select the new role for the employee:',
+                    choices: rolesList.map((role) => ({
+                        name: role.job_title,
+                        value: role.role_id,
+                    })),
+                },
+            ]);
+
+            try {
+                const { employeeId, newRoleId } = employeeUpdatePrompt;
+
+                await db.promise().query('UPDATE employee SET role_id = ? WHERE id = ?', [newRoleId, employeeId]);
+                console.log('Employee role updated successfully.');
+            } catch (error) {
+                console.error('An error occurred while updating the employee role:', error);
+            }
             break;
         case 'Quit':
             console.log('Quitting...');
