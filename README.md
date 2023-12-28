@@ -1,5 +1,5 @@
 
-# README
+# Employee Database
 
 ## Description
 Command-line interface employee database that allows the user to view and add departments, roles, and employees. User is also able to update employee roles as needed. 
