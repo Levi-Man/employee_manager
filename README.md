@@ -41,3 +41,6 @@ For any questions or suggestions, please reach me at github.com/Levi-Man or at i
 Video link: https://drive.google.com/file/d/1TkPL8WIsZKWdUVO2DFNet5qAe-BuUKXP/view
 
 GitHub repo: https://github.com/Levi-Man/employee_manager
+
+
+*I utilized the Xpert Learning Assistant quite a lot in this code. 
