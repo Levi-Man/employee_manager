@@ -37,3 +37,7 @@ Testing to be developed.
 For any questions or suggestions, please reach me at github.com/Levi-Man or at indra.levi.manahan@gmail.com.
 
 <img src="Assets/Screenshot 2023-12-27 155935.png" alt=screenshot of program>
+
+Video link: https://drive.google.com/file/d/1TkPL8WIsZKWdUVO2DFNet5qAe-BuUKXP/view
+
+GitHub repo: https://github.com/Levi-Man/employee_manager
