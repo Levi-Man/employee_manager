@@ -20,8 +20,11 @@ Command-line interface employee database that allows the user to view and add de
 
 ## Installation
 Clone my repo and copy files into file a folder
+
 In the CLI, enter these commands: 
+
 npm install
+
 npm start
 
 ## Usage
