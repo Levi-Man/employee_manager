@@ -19,7 +19,10 @@ Command-line interface employee database that allows the user to view and add de
 [Questions](#questions)
 
 ## Installation
-Run npm start
+Clone my repo and copy files into file a folder
+In the CLI, enter these commands: 
+npm install
+npm start
 
 ## Usage
 Follow the prompts in the command-line interface to access the features of the program.
@@ -42,5 +45,3 @@ Video link: https://drive.google.com/file/d/1TkPL8WIsZKWdUVO2DFNet5qAe-BuUKXP/vi
 
 GitHub repo: https://github.com/Levi-Man/employee_manager
 
-
-*I utilized the Xpert Learning Assistant quite a lot in this code. 
